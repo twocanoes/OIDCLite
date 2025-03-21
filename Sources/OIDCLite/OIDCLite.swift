@@ -567,6 +567,59 @@ public class OIDCLite: NSObject {
 
     }
     
+    public func requestTokenWithROPG(username: String, password: String, basicAuth: Bool) async throws {
+        guard let urlString = OIDCTokenEndpoint, let url = URL(string: urlString) else {
+            self.delegate?.authFailure(message: "url endpoint not set")
+            return
+        }
+        var req = URLRequest(url: url)
+
+        var headers = [
+            "Accept": "application/json",
+            "Cache-Control": "no-cache",
+            "Content-Type" : "application/x-www-form-urlencoded"
+        ]
+        
+        var reqComponents = URLComponents()
+        var queryItems = [
+            URLQueryItem(name: "grant_type", value: "password"),
+            URLQueryItem(name: "scope", value: "openid profile email"),
+            URLQueryItem(name: "username", value: username),
+            URLQueryItem(name: "password", value: password)
+        ]
+        
+        if !basicAuth {
+            queryItems.append(URLQueryItem(name: "client_id", value: clientID))
+            if let clientSecret = clientSecret {
+                queryItems.append(URLQueryItem(name: "client_secret", value: clientSecret))
+            }
+        } else {
+            var loginString = clientID
+            if let clientSecret = clientSecret {
+                loginString.append(":" + clientSecret)
+            }
+            if let data = loginString.data(using: .utf8) {
+                headers["Authorization"] = "Basic " + data.base64EncodedString()
+            } else {
+                self.delegate?.authFailure(message: "bad login info")
+                return
+            }
+        }
+        
+        reqComponents.queryItems = queryItems
+        req.allHTTPHeaderFields = headers
+        req.httpMethod = "POST"
+        req.httpBody = reqComponents.query?.data(using: .utf8)
+        
+        let (data, response) = try await URLSession.shared.data(for: req)
+        if let response = response as? HTTPURLResponse,
+           (200...228).contains(response.statusCode) {
+                self.processOIDCResponse(data)
+        } else {
+            self.delegate?.authFailure(message: String(data: data, encoding: .utf8) ?? "Unknown error")
+        }
+    }
+    
     private func prettyPrintInfo(dict: [String:Any]) -> String {
         
         var result = ""
