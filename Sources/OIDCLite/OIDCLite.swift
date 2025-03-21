@@ -132,6 +132,9 @@ public class OIDCLite: NSObject {
         let codeChallengeMethod = "code_challenge_method"
         let codeChallenge = "code_challenge"
         let nonce = "nonce"
+        let grantType = "grant_type"
+        let username = "username"
+        let password = "password"
     }
     
     /// Create a new OIDCLite object
@@ -589,10 +592,10 @@ public class OIDCLite: NSObject {
         
         var reqComponents = URLComponents()
         var queryItems = [
-            URLQueryItem(name: "grant_type", value: "password"),
-            URLQueryItem(name: "scope", value: "openid profile email"),
-            URLQueryItem(name: "username", value: username),
-            URLQueryItem(name: "password", value: password)
+            URLQueryItem(name: queryItemKeys.grantType, value: "password"),
+            URLQueryItem(name: queryItemKeys.scope, value: scopes.joined(separator: " ")),
+            URLQueryItem(name: queryItemKeys.username, value: username),
+            URLQueryItem(name: queryItemKeys.password, value: password)
         ]
         
         if !basicAuth {
