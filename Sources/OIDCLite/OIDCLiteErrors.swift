@@ -8,7 +8,7 @@
 import Foundation
 
 public enum OIDCLiteError: Error {
-    case unableToFindCode
+    case unableToFindCode, unableToLoadEndpoint, unableToParseEndpoint
 }
 
 extension OIDCLiteError {
@@ -16,6 +16,10 @@ extension OIDCLiteError {
         switch self {
         case .unableToFindCode:
             return "Unable to parse code from URL"
+        case .unableToLoadEndpoint:
+            return "Unable to load OIDC discovery endpoint"
+        case .unableToParseEndpoint:
+            return "Unable to parse OIDC discovery endpoint"
         }
     }
 }
