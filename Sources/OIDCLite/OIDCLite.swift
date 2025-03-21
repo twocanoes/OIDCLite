@@ -406,14 +406,18 @@ public class OIDCLite: NSObject {
                 print(error.localizedDescription)
             } else if let data = data,
                       let response = response as? HTTPURLResponse,
-                      response.statusCode == 200 {
+                      (200...228).contains(response.statusCode) {
                 
                 // if we got a 200 find the auth and token endpoints
                 
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [ String : Any] {
                     self.OIDCAuthEndpoint = json["authorization_endpoint"] as? String ?? ""
                     self.OIDCTokenEndpoint = json["token_endpoint"] as? String ?? ""
+                } else {
+                    self.delegate?.authFailure(message: "Unable to parse discovery endpoint")
                 }
+            } else {
+                self.delegate?.authFailure(message: "Unable to load discovery endpoint")
             }
             sema.signal()
         }
@@ -427,7 +431,6 @@ public class OIDCLite: NSObject {
         // make sure we can actually make a URL from the discoveryURL that we have
         guard let host = URL(string: discoveryURL) else { return }
         var req = URLRequest(url: host)
-        let sema = DispatchSemaphore(value: 0)
         
         let headers = [
             "Accept": "application/json",
@@ -438,11 +441,15 @@ public class OIDCLite: NSObject {
         req.httpMethod = "GET"
         let (data, response) = try await session.data(for: req)
         if let response = response as? HTTPURLResponse,
-           response.statusCode == 200 {
+           (200...228).contains(response.statusCode) {
             if let json = try JSONSerialization.jsonObject(with: data) as? [ String : Any] {
                 self.OIDCAuthEndpoint = json["authorization_endpoint"] as? String ?? ""
                 self.OIDCTokenEndpoint = json["token_endpoint"] as? String ?? ""
+            } else {
+                throw OIDCLiteError.unableToParseEndpoint
             }
+        } else {
+            throw OIDCLiteError.unableToLoadEndpoint
         }
     }
     
