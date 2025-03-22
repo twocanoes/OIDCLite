@@ -629,10 +629,17 @@ public class OIDCLite: NSObject {
                   (400...403).contains(response.statusCode),
                   let overrideErrors = overrideErrors,
                   let errorMessage = String(data: data, encoding: .utf8) {
+            var success = false
             for i in overrideErrors {
                 if i == errorMessage {
-                    self.delegate?.ropgSuccess(errorMessage: errorMessage)
+                    success = true
+                    break
                 }
+            }
+            if success {
+                self.delegate?.ropgSuccess(errorMessage: errorMessage)
+            } else {
+                self.delegate?.authFailure(message: String(data: data, encoding: .utf8) ?? "Unknown error")
             }
         } else {
             self.delegate?.authFailure(message: String(data: data, encoding: .utf8) ?? "Unknown error")
