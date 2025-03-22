@@ -279,7 +279,7 @@ public class OIDCLite: NSObject {
 
             } else if let data = data,
                       let response = response as? HTTPURLResponse,
-                      response.statusCode == 200 {
+                      response.statusCode >= 200, response.statusCode <= 299 {
                 self.processOIDCResponse(data)
             } else {
                 if data != nil {
@@ -299,13 +299,18 @@ public class OIDCLite: NSObject {
         }
         dataTask?.resume()
     }
-    
-    /// Function to parse the openid-configuration file into all of the requisite endpoints
-    public func getEndpoints() {
 
+    public func getEndpoints() {
+        let _ = getEndpointsWithResult()
+    }
+
+    /// Function to parse the openid-configuration file into all of the requisite endpoints
+    public func getEndpointsWithResult() -> Bool {
+
+        var success=false
         // make sure we can actually make a URL from the discoveryURL that we have
-        guard let host = URL(string: discoveryURL) else { return }
-        
+        guard let host = URL(string: discoveryURL) else { return false }
+
         var dataTask: URLSessionDataTask?
         var req = URLRequest(url: host)
         let sema = DispatchSemaphore(value: 0)
@@ -325,7 +330,7 @@ public class OIDCLite: NSObject {
             } else if let data = data,
                       let response = response as? HTTPURLResponse,
                       response.statusCode == 200 {
-                
+                success=true
                 // if we got a 200 find the auth and token endpoints
                 
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [ String : Any] {
@@ -338,6 +343,7 @@ public class OIDCLite: NSObject {
         
         dataTask?.resume()
         sema.wait()
+        return success
     }
     
     /// Parse the response  from a redirect with a possible code in it.
@@ -427,15 +433,6 @@ public class OIDCLite: NSObject {
         if let resource = resource, let encodedResource = resource.addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed)?.replacingOccurrences(of: " ", with: "+"){
 
             parameters += "&resource=\(encodedResource)"
-        }
-        if let encodedClientID = clientID.addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed)?.replacingOccurrences(of: " ", with: "+"){
-
-            parameters += "&client_id=\(encodedClientID)"
-        }
-
-        if let clientSecret = clientSecret, let encodedSecret = clientSecret.addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed)?.replacingOccurrences(of: " ", with: "+"){
-
-            parameters += "&client_secret=\(encodedSecret)"
         }
 
         guard let postData =  parameters.data(using: .utf8) else {
