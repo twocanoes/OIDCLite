@@ -626,7 +626,7 @@ public class OIDCLite: NSObject {
            (200...228).contains(response.statusCode) {
             self.processOIDCResponse(data)
         } else if let response = response as? HTTPURLResponse,
-                  response.statusCode == 401,
+                  (400...403).contains(response.statusCode),
                   let overrideErrors = overrideErrors,
                   let errorMessage = String(data: data, encoding: .utf8) {
             for i in overrideErrors {
